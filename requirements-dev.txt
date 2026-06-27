@@ -1,0 +1,9 @@
+# AuthRadar development & verification toolchain.
+-r requirements.txt
+pytest==9.1.1
+pytest-asyncio==1.4.0
+ruff==0.15.20
+mypy==2.1.0
+bandit==1.9.4
+pip-audit==2.10.1
+python-multipart==0.0.32

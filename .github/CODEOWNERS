@@ -1,0 +1,10 @@
+# Code owners for AuthRadar.
+# These owners are requested for review automatically when matching files change.
+# Replace @authradar/maintainers with your actual GitHub team or usernames.
+
+*                       @authradar/maintainers
+
+# Detection logic and the engine warrant extra scrutiny.
+/authradar/core/        @authradar/maintainers
+/authradar/scanner/     @authradar/maintainers
+/SECURITY.md            @authradar/maintainers

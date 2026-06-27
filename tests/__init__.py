@@ -1,0 +1,1 @@
+"""AuthRadar test suite."""
