@@ -7,7 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-_Nothing yet._
+### Added
+
+- **Web console** at `GET /ui/`: a self-contained, dependency-free dashboard
+  (HTML/CSS/JS) served by `authradar serve` to configure scans, watch live
+  progress, and review a severity breakdown, category chart, and filterable
+  findings with full remediation/evidence detail.
+- **Async scan-job API**: `POST /scan/jobs`, `GET /scan/jobs`, and
+  `GET /scan/jobs/{id}` (all API-key protected) backed by an in-memory job
+  store, so browsers can start a scan and poll for results without holding a
+  long-lived request open.
+- **`GET /scanners`** endpoint exposing scanner metadata to the UI.
+- Project logo (`assets/logo.svg`, `assets/logo-mark.svg`).
 
 ## [0.1.0] - 2026-06-27
 

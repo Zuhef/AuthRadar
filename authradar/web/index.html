@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AuthRadar — Authentication Security Console</title>
+  <meta name="description" content="Web console for the AuthRadar authentication-security auditing framework." />
+  <link rel="icon" type="image/svg+xml" href="logo-mark.svg" />
+  <link rel="stylesheet" href="styles.css" />
+  <script defer src="app.js"></script>
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <a class="brand" href="./" aria-label="AuthRadar home">
+        <img src="logo-mark.svg" alt="" width="34" height="34" />
+        <span class="brand-word">Auth<b>Radar</b></span>
+        <span class="brand-tag">console</span>
+      </a>
+      <div class="topbar-actions">
+        <span id="health" class="pill pill-muted" title="API health">
+          <span class="dot"></span><span id="healthText">checking…</span>
+        </span>
+        <button id="keyBtn" type="button" class="btn ghost">
+          <span id="keyState" class="key-state key-state-off"></span> API key
+        </button>
+      </div>
+    </header>
+
+    <main class="layout">
+      <!-- Configuration -->
+      <aside class="panel config">
+        <div class="panel-head">
+          <h2>New scan</h2>
+          <p class="muted">Configure and launch an authentication audit.</p>
+        </div>
+
+        <form id="scanForm" novalidate>
+          <label class="field">
+            <span class="field-label">Target URL <em>*</em></span>
+            <input id="target" name="target" type="text" inputmode="url"
+                   placeholder="https://app.example.com" autocomplete="off" required />
+            <span class="field-hint">Scheme defaults to <code>https://</code> if omitted.</span>
+          </label>
+
+          <div class="toggles">
+            <label class="toggle">
+              <input id="active_probes" type="checkbox" />
+              <span class="toggle-ui"></span>
+              <span class="toggle-label">Active probes
+                <span class="muted">rate-limit, OTP, enumeration, MFA</span>
+              </span>
+            </label>
+            <label class="toggle">
+              <input id="use_browser" type="checkbox" />
+              <span class="toggle-ui"></span>
+              <span class="toggle-label">Browser storage
+                <span class="muted">Playwright localStorage/sessionStorage</span>
+              </span>
+            </label>
+            <label class="toggle">
+              <input id="verify_tls" type="checkbox" checked />
+              <span class="toggle-ui"></span>
+              <span class="toggle-label">Verify TLS
+                <span class="muted">certificate validation</span>
+              </span>
+            </label>
+          </div>
+
+          <details class="group">
+            <summary>Crawl &amp; limits</summary>
+            <div class="grid-2">
+              <label class="field sm">
+                <span class="field-label">Max pages</span>
+                <input id="max_pages" type="number" min="1" max="10000" value="50" />
+              </label>
+              <label class="field sm">
+                <span class="field-label">Max depth</span>
+                <input id="max_depth" type="number" min="0" max="20" value="3" />
+              </label>
+              <label class="field sm">
+                <span class="field-label">Concurrency</span>
+                <input id="concurrency" type="number" min="1" max="100" value="10" />
+              </label>
+              <label class="field sm">
+                <span class="field-label">Timeout (s)</span>
+                <input id="timeout_s" type="number" min="1" max="300" step="0.5" value="15" />
+              </label>
+              <label class="field sm">
+                <span class="field-label">Probe attempts</span>
+                <input id="probe_attempts" type="number" min="2" max="100" value="12" />
+              </label>
+              <label class="field sm">
+                <span class="field-label">Allowed hosts</span>
+                <input id="allowed_hosts" type="text" placeholder="cdn.example.com, api.example.com" />
+              </label>
+            </div>
+          </details>
+
+          <details class="group">
+            <summary>Authentication <span class="muted">(optional, enables stateful checks)</span></summary>
+            <div class="grid-2">
+              <label class="field sm">
+                <span class="field-label">Username</span>
+                <input id="username" type="text" autocomplete="off" />
+              </label>
+              <label class="field sm">
+                <span class="field-label">Password</span>
+                <input id="password" type="password" autocomplete="new-password" />
+              </label>
+              <label class="field sm">
+                <span class="field-label">Login path</span>
+                <input id="login_path" type="text" placeholder="/login" />
+              </label>
+              <label class="field sm">
+                <span class="field-label">Logout path</span>
+                <input id="logout_path" type="text" placeholder="/logout" />
+              </label>
+              <label class="field sm">
+                <span class="field-label">Protected path</span>
+                <input id="protected_path" type="text" placeholder="/account" />
+              </label>
+              <label class="field sm">
+                <span class="field-label">Username field</span>
+                <input id="username_field" type="text" placeholder="username" />
+              </label>
+              <label class="field sm">
+                <span class="field-label">Password field</span>
+                <input id="password_field" type="text" placeholder="password" />
+              </label>
+            </div>
+            <p class="field-hint">Only use accounts you own or are authorized to test.</p>
+          </details>
+
+          <details class="group">
+            <summary>Scanners <span class="muted" id="scannerCount"></span></summary>
+            <div class="scanner-actions">
+              <button type="button" class="link" data-all="true">Select all</button>
+              <button type="button" class="link" data-all="false">Clear</button>
+            </div>
+            <div id="scannerList" class="scanner-list">
+              <p class="muted">Loading scanners…</p>
+            </div>
+          </details>
+
+          <label class="consent" for="authorized">
+            <input id="authorized" type="checkbox" />
+            <span>I am <strong>authorized</strong> to test this target. AuthRadar sends real HTTP
+            traffic, including active probes when enabled.</span>
+          </label>
+
+          <button id="submitBtn" type="submit" class="btn primary block" disabled>
+            <svg viewBox="0 0 24 24" class="btn-ico" aria-hidden="true"><path fill="currentColor" d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2Zm0 4a1 1 0 0 1 1 1v4.59l3.3 3.3a1 1 0 0 1-1.42 1.42l-3.59-3.59A1 1 0 0 1 11 12V7a1 1 0 0 1 1-1Z"/></svg>
+            Start scan
+          </button>
+          <p id="formError" class="form-error" hidden></p>
+        </form>
+      </aside>
+
+      <!-- Results -->
+      <section class="results" id="results" aria-live="polite">
+        <div class="welcome">
+          <img src="logo-mark.svg" alt="" width="76" height="76" />
+          <h2>Authentication on the radar</h2>
+          <p>Enter a target, confirm you are authorized, and launch a scan. Findings,
+             severity breakdown, and remediation guidance will appear here.</p>
+          <ol class="welcome-steps">
+            <li>Set your <strong>API key</strong> (top-right) — the server requires it.</li>
+            <li>Enter the <strong>target URL</strong> and choose options.</li>
+            <li>Confirm authorization and <strong>start the scan</strong>.</li>
+          </ol>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <span>AuthRadar <span id="footVersion">·</span></span>
+      <span class="muted">Authorized testing only — you are responsible for how you use this tool.</span>
+    </footer>
+  </div>
+
+  <!-- API key modal -->
+  <div class="modal" id="keyModal" hidden>
+    <div class="modal-backdrop" data-close="true"></div>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="keyTitle">
+      <h3 id="keyTitle">API key</h3>
+      <p class="muted">The server enables scanning only when <code>AUTHRADAR_API_KEY</code> is set.
+         Paste the same value here; it is sent as the <code>X-API-Key</code> header and stored in
+         this browser's local storage.</p>
+      <label class="field">
+        <span class="field-label">X-API-Key</span>
+        <input id="keyInput" type="password" autocomplete="off" placeholder="paste your key" />
+      </label>
+      <div class="modal-actions">
+        <button type="button" class="btn ghost" data-close="true">Cancel</button>
+        <button type="button" class="btn ghost danger" id="keyClear">Forget</button>
+        <button type="button" class="btn primary" id="keySave">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toasts" id="toasts" aria-live="assertive"></div>
+</body>
+</html>

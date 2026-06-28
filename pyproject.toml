@@ -68,7 +68,7 @@ include = ["authradar*"]
 exclude = ["tests*"]
 
 [tool.setuptools.package-data]
-authradar = ["py.typed"]
+authradar = ["py.typed", "web/*"]
 
 [tool.ruff]
 line-length = 100

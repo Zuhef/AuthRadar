@@ -1,4 +1,8 @@
-# AuthRadar
+<p align="center">
+  <img src="assets/logo.svg" alt="AuthRadar" width="640">
+</p>
+
+<h1 align="center">AuthRadar</h1>
 
 **AuthRadar** is an asynchronous authentication-security auditing framework for
 modern web applications. Point it at an application you are authorized to test
@@ -26,6 +30,7 @@ thoroughly unit-tested.
   opt-in via `--active`.
 - **Pluggable scanners** discovered via a registry and Python entry points.
 - **Multiple report formats**: JSON (for CI), Markdown, and self-contained HTML.
+- **Web console** served by the API for browser-driven scans and a live findings dashboard.
 - **Fully typed** (`py.typed`, `mypy --strict`) and linted (`ruff`).
 
 ## What it detects
@@ -107,14 +112,52 @@ asyncio.run(main())
 
 ### HTTP API (optional)
 
-AuthRadar ships an optional FastAPI server. It is **secure by default**: the
-`/scan` endpoint is disabled until you set an API key.
+AuthRadar ships an optional FastAPI server. It is **secure by default**: every
+scanning endpoint is disabled until you set an API key.
 
 ```bash
 export AUTHRADAR_API_KEY='a-long-random-secret'
 authradar serve --host 127.0.0.1 --port 8000
 # POST /scan with header  X-API-Key: a-long-random-secret  and a ScanConfig body
 ```
+
+| Method | Path | Auth | Purpose |
+| --- | --- | --- | --- |
+| `GET` | `/health` | – | Liveness / version probe |
+| `GET` | `/scanners` | – | List available scanners (metadata only) |
+| `POST` | `/scan` | key | Run a scan synchronously, return the `ScanResult` |
+| `POST` | `/scan/jobs` | key | Start a scan as a background job (returns a job id) |
+| `GET` | `/scan/jobs` | key | List tracked jobs (newest first) |
+| `GET` | `/scan/jobs/{id}` | key | Poll a job's status and result |
+| `GET` | `/ui/` | – | Web console (static assets) |
+
+The synchronous `POST /scan` is ideal for CI; the `/scan/jobs` endpoints back the
+web UI so a browser can start a scan and poll for progress without holding a
+long request open. Job state is in-memory and process-local.
+
+### Web UI
+
+`authradar serve` also hosts a self-contained web console at
+**`http://127.0.0.1:8000/ui/`** — no build step, Node toolchain, or extra
+dependencies required. From the browser you can:
+
+- configure a scan (target, crawl limits, active probes, browser storage, TLS
+  verification, optional authentication credentials, and per-scanner toggles);
+- launch it as a background job and watch live progress;
+- review a dashboard with a severity breakdown (donut + per-category bars),
+  filterable findings, and full remediation, evidence, CWE and reference detail.
+
+```bash
+export AUTHRADAR_API_KEY='a-long-random-secret'
+authradar serve
+# open http://127.0.0.1:8000/ui/ and paste the same key via the "API key" button
+```
+
+The console is a static front-end: it can do nothing until you paste the API
+key (stored only in your browser's local storage and sent as `X-API-Key`).
+Because AuthRadar sends real traffic to its target, the UI requires you to
+confirm you are authorized before each scan. Bind the server to `127.0.0.1`
+unless you have added authentication and network controls for your environment.
 
 ## Docker
 
@@ -131,7 +174,9 @@ authradar/
   scanner/     one module per detection family (pure analysis + async collection)
   reporting/   JSON / Markdown / HTML reporters
   cli/         argparse entry point and command implementations
-  api.py       optional FastAPI server
+  web/         self-contained web console (static HTML / CSS / JS)
+  api.py       optional FastAPI server + web console
+  jobs.py      in-memory async scan-job store backing the web UI
   engine.py    scan orchestration
 ```
 

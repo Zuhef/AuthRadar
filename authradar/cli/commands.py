@@ -133,10 +133,11 @@ def cmd_serve(args: argparse.Namespace) -> int:
     """Run the FastAPI server."""
     if not os.environ.get(API_KEY_ENV):
         print(
-            f"warning: {API_KEY_ENV} is not set; the /scan endpoint will return 503 "
+            f"warning: {API_KEY_ENV} is not set; the scan endpoints will return 503 "
             "until you set it.",
             file=sys.stderr,
         )
+    print(f"AuthRadar web console: http://{args.host}:{args.port}/ui/", file=sys.stderr)
     uvicorn.run(create_app(), host=args.host, port=args.port, log_level="info")
     return 0
 
